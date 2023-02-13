@@ -1,0 +1,43 @@
+[build-system]
+requires      = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hyperlight"
+version = "0.0.1"
+description = "Composable Hypernetworks in Pytorch"
+authors = [{ name = "Jose Javier Gonzalez Ortiz", email = "josejg@mit.edu" }]
+license = { file = "LICENSE" }
+readme = "README.md"
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+keywords = ["hyperlight", "pytorch", "hypernetworks", "deep learning"]
+dependencies = [
+    "torch"
+]
+requires-python = ">=3.9"
+
+[project.optional-dependencies]
+dev = ["black", "bumpver", "isort", "pip-tools", "pytest", "pyright"]
+
+[project.urls]
+Homepage = "https://github.com/jjgo/hyperlight"
+Repository = "https://github.com/jjgo/hyperlight"
+
+# [project.scripts]
+# realpython = "reader.__main__:main"
+
+[tool.bumpver]
+current_version = "0.0.1"
+version_pattern = "MAJOR.MINOR.PATCH"
+commit_message  = "Bump version {old_version} -> {new_version}"
+commit          = true
+tag             = true
+push            = false
+
+[tool.bumpver.file_patterns]
+"pyproject.toml" = ['current_version = "{version}"', 'version = "{version}"']
+"hyperlight/__init__.py" = ["{version}"]
