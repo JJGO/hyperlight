@@ -18,14 +18,24 @@ What sets HyperLight apart from other hypernetwork implementations:
 
 HyperLight can be installed via `pip`. For the stable version:
 
-```
+```shell
 pip install hyperlight
 ```
 
 Or for the latest version:
 
-```
+```shell
 pip install git+https://github.com/JJGO/hyperlight.git
+```
+
+You can also **manually** install it by cloning it, installing dependencias and adding it to your PYTHONPATH
+
+
+```shell
+git clone https://github.com/JJGO/hyperlight
+python -m pip install -r ./hyperlight/requirements.txt
+
+export PYTHONPATH="$PYTHONPATH:$(realpath ./hyperlight)"
 ```
 
 
