@@ -28,7 +28,7 @@ Or for the latest version:
 pip install git+https://github.com/JJGO/hyperlight.git
 ```
 
-You can also **manually** install it by cloning it, installing dependencias and adding it to your PYTHONPATH
+You can also **manually** install it by cloning it, installing dependencias and adding it to your `PYTHONPATH`:
 
 
 ```shell
