@@ -1,37 +1,44 @@
 [build-system]
-requires      = ["setuptools>=61.0.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
-[project]
+[tool.poetry]
 name = "hyperlight"
-version = "0.0.1"
-description = "Composable Hypernetworks in Pytorch"
-authors = [{ name = "Jose Javier Gonzalez Ortiz", email = "josejg@mit.edu" }]
-license = { file = "LICENSE" }
+homepage = "https://github.com/JJGO/hyperlight"
+documentation = "https://github.com/JJGO/hyperlight"
+version = "0.0.2"
+description = "Hyperlight is a Pytorch hypernetwork framework with a streamlined API"
+authors = ["Jose Javier Gonzalez Ortiz <josejg@mit.edu>"]
+license = "Apache-2.0"
 readme = "README.md"
-classifiers = [
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
+classifiers=[
+    'Intended Audience :: Science/Research',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
+    'License :: OSI Approved :: Apache Software License 2.0 (Apache-2.0)',
 ]
+
 keywords = ["hyperlight", "pytorch", "hypernetworks", "deep learning"]
-dependencies = [
-    "torch"
-]
-requires-python = ">=3.9"
 
-[project.optional-dependencies]
-dev = ["black", "bumpver", "isort", "pip-tools", "pytest", "pyright"]
+[tool.poetry.dependencies]
+python = "^3.7"
+torch = ">=1.10,<3"
 
-[project.urls]
-Homepage = "https://github.com/jjgo/hyperlight"
-Repository = "https://github.com/jjgo/hyperlight"
+[tool.poetry.dev-dependencies]
+black = "^22.6"
+bumpver = "^2021.11.17"
+isort = "^5.9.3"
+pytest = "^7.0.0"
+pyright = "^1.2.0"
+pre-commit = "^2.17.0"
 
-# [project.scripts]
-# realpython = "reader.__main__:main"
+[tool.isort]
+profile = "black"
 
 [tool.bumpver]
-current_version = "0.0.1"
+current_version = "0.0.2"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message  = "Bump version {old_version} -> {new_version}"
 commit          = true
