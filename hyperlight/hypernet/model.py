@@ -1,14 +1,14 @@
+import math
 from collections import OrderedDict
 from functools import cached_property
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import numpy as np
 import torch
-from torch import nn
-from torch import Tensor
+from torch import Tensor, nn
 
 from .encoding import InputMode, encode_input, encoding_multiplier
-from .initialization import initialize_bias, initialize_layer, initialize_weight
+from .initialization import (initialize_bias, initialize_layer,
+                             initialize_weight)
 
 Shape = Tuple[int, ...]
 
@@ -137,7 +137,7 @@ class HyperNetMixin:
         Returns:
             int: The flat input size.
         """
-        flat_input_size = sum(int(np.prod(v)) for v in self.input_shapes.values())
+        flat_input_size = sum(int(math.prod(v)) for v in self.input_shapes.values())
         flat_input_size *= encoding_multiplier[self.encoding]
         return flat_input_size
 
@@ -148,7 +148,7 @@ class HyperNetMixin:
         Returns:
             int: The flat output size.
         """
-        flat_output_size = sum(int(np.prod(v)) for v in self.output_shapes.values())
+        flat_output_size = sum(int(math.prod(v)) for v in self.output_shapes.values())
         return flat_output_size
 
     @cached_property

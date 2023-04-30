@@ -7,7 +7,6 @@ from typing import Dict, List, Optional, Sequence, Type
 from torch import Tensor, nn
 
 from .nn import ExternalParameter, HyperModule
-from .util import without_keys
 
 
 def _init_from_regular(

@@ -4,8 +4,6 @@ from typing import Dict, List, Optional, Sequence, Tuple, Type
 
 from torch import nn
 
-from .util import validate_types
-
 
 def _ensure_module(module: nn.Module):
     if not isinstance(module, nn.Module):
@@ -55,7 +53,6 @@ def find_modules_of_type(
     ]
 
 
-@validate_types
 def find_modules_from_patterns(
     model: nn.Module,
     globs: Optional[List[str]] = None,
@@ -91,7 +88,6 @@ def find_modules_from_patterns(
     return {name: named_modules[name] for name in pattern_matches}
 
 
-@validate_types
 def find_parameters_from_patterns(
     model: nn.Module,
     globs: Optional[List[str]] = None,
