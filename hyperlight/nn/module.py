@@ -143,10 +143,10 @@ class HyperModule(nn.Module):
 
     def external_shapes(self) -> Dict[str, Tuple[int, ...]]:
         """
-        Returns an iterator over the shapes of all external parameters in the module
-        and its submodules as tuples (name, shape)
+        Returns an dictionary of the shapes of all external parameters in the module
+        and its submodules
 
-        Yields:
+        Returns:
             Dict[str, Tuple[int, ...]]: An iterator over the shapes of all
             external parameters in the module and its submodules
             as tuples (name, shape)
@@ -233,7 +233,8 @@ class HyperModule(nn.Module):
         parameter = getattr(self, parameter_name)
         if isinstance(parameter, nn.Parameter):
             delattr(self, parameter_name)
-            self.register_external(parameter_name, ExternalParameter(parameter.shape))
+            shape = tuple(parameter.shape)
+            self.register_external(parameter_name, ExternalParameter(shape))
             return parameter.data
 
     def convert_externals(self, parameter_names: List[str]) -> Dict[str, Tensor]:

@@ -201,22 +201,106 @@ Once defined, we can make use of this module in the following way
 ```python
 >>> layer = HyperLinear(in_features=8, out_features=16)
 >>> layer.external_shapes()
+{'weight': (16, 8), 'bias': (16,)}
+>>> x = torch.zeros(1, 8)
 
+# Layer cannot be used until weights are set
+>>> layer(x)
+[...]
+AttributeError: Uninitialized External Parameter, please set the value first
+
+# We need to set the external weights first
+>>> layer.set_externals(weight=torch.rand(size=(16,8)), bias=torch.zeros((16,)))
+>>> layer(x).shape
+torch.Size([1, 16])
+
+# Once we are done, we reset the external parameter values
+>>> layer.reset_externals()
+```
+
+Alternatively, we can use the `using_externals` contextmanager that will set and reset
+the parameters accordingly
+
+```python
+params(weight=torch.rand(size=(16,8)), bias=torch.zeros((16,)))
+with layer.using_externals(params):
+    y = layer(x)
 ```
 
 ### Dynamically hypernetizing modules
 
-HyperLight supports **dynamic** HyperModule creation using the `hypernetize` and `hypernetize_single`
-routines. The former is recursive while the latter is not.
+HyperLight supports **dynamic** HyperModule creation using the `hypernetize` helper.
+We need to specify what parameters we want to remove fromt the module and convert to
+`ExternalParameter` objects.
 
 ```python
-from hyperlight import hypernetize, hypernetize_single
+>>> from torch import nn
+>>> from hyperlight import hypernetize, hypernetize_single
 
-
+>>> layer = nn.Linear(in_features=8, out_features=16)
+>>> layer = hypernetize(layer, parameters=[layer.weight, layer.bias])
+>>> layer
+HypernetizedLinear()
+>>> layer.external_shapes()
+{'weight': (16, 8), 'bias': (16,)}
 ```
 
+`hypernetize` is recursive, and supports entire modules being specified
 
-###
+
+```python
+>>> model = nn.Sequential(OrderedDict({
+    'conv': nn.Conv2d(3,128,3),
+    'norm': nn.BatchNorm2d(128),
+    'relu': nn.ReLU(),
+    'pool': nn.AdaptiveAvgPool2d((1,1)),
+    'out': nn.Linear(128, 10)
+}))
+
+>>> model = hypernetize(model, modules=[model.conv, model.out])
+>>>  model.external_shapes()
+{'conv.weight': (128, 3, 3, 3),
+ 'conv.bias': (128,),
+ 'out.weight': (10, 128),
+ 'out.bias': (10,)}
+```
+
+### Finding modules and parameters
+
+Additionally, Hyperlight provides several routines to recursively search for parameters and modules to feed
+into `hypernetize`:
+
+- `find_modules_of_type(model, module_types)` – To find modules from a certain type,
+e.g. `nn.Linear` or `nn.Conv2d`
+- `find_modules_from_patterns(model, globs=None, regex=None)` – To find modules matching
+specific patterns usingglobs, e.g. `*.conv`; or regexes `e.g. layer[1-3].*conv`
+- `find_parameters_from_patterns(model, globs=None, regex=None)` – To find parameter
+matching specific patterns.
+
+Some examples on a ResNet18 architecture:
+
+```python
+>>> from torchvision.models import resnet18
+>>> from hyperlight import find_modules_of_type
+>>> model = resnet18()
+# All convolutions
+>>> find_modules_of_type(model, [nn.Conv2d])
+{'conv1': Conv2d(3, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False),
+ 'layer1.0.conv1': Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False),
+ 'layer1.0.conv2': Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False),
+ ...
+
+# First convolution of every ResNet block
+>>> find_modules_from_patterns(model, regex=['^layer\d.0.conv1'])
+{'layer1.0.conv1': Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False),
+ 'layer2.0.conv1': Conv2d(64, 128, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False),
+ 'layer3.0.conv1': Conv2d(128, 256, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False),
+ 'layer4.0.conv1': Conv2d(256, 512, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)}
+
+# Getting just the convolutional weights of the first block (no biases)
+>>> find_parameters_from_patterns(model, globs=['layer1*conv*.weight']).keys()
+dict_keys(['layer1.0.conv2.weight', 'layer1.0.conv1.weight', 'layer1.1.conv1.weight', 'layer1.1.conv2.weight'])
+```
 
 
 ## Citation
