@@ -358,6 +358,30 @@ class HyperNet(nn.Module, HyperNetMixin):
 
         self.set_independent_weights(weights)
 
+    def freeze_independent_weights(self) -> None:
+        """
+        Freezes the independent set of parameters,
+        i.e. the bias of the last layer
+
+        Raises:
+            ValueError: If the backbone's last layer has no bias.
+        """
+        if not self.backbone.out_bias:
+            raise ValueError("backbone's last layer has no bias")
+        self.backbone.output.bias.requires_grad_(False)
+
+    def unfreeze_independent_weights(self) -> None:
+        """
+        Unfreezes the independent set of parameters,
+        i.e. the bias of the last layer
+
+        Raises:
+            ValueError: If the backbone's last layer has no bias.
+        """
+        if not self.backbone.out_bias:
+            raise ValueError("backbone's last layer has no bias")
+        self.backbone.output.bias.requires_grad_(True)
+
     def forward(self, **inputs: Tensor) -> Dict[str, Tensor]:
         """Performs a forward pass of the neural network.
 

@@ -30,7 +30,7 @@ def _ensure_module_types(
 
 def find_modules_of_type(
     model: nn.Module, module_types: Sequence[Type[nn.Module]]
-) -> List[Tuple[str, nn.Module]]:
+) -> Dict[str, nn.Module]:
     """
     Find all modules of given types in a PyTorch model.
 
@@ -39,7 +39,7 @@ def find_modules_of_type(
       module_types (Sequence[Type[nn.Module]]): The types of modules to search for.
 
     Returns:
-      List[Tuple[str, nn.Module]]: A list of tuples containing the name and module for each found module.
+      Dict[str, nn.Module]: A list of tuples containing the name and module for each found module.
 
     Raises:
       TypeError: If model is not an instance of nn.Module or if module_types is not comprised of nn.Module types.

@@ -141,18 +141,20 @@ class HyperModule(nn.Module):
         for _, external_param in self.named_externals():
             yield external_param
 
-    def external_shapes(self) -> Iterator[Tuple[str, Tuple[int, ...]]]:
+    def external_shapes(self) -> Dict[str, Tuple[int, ...]]:
         """
         Returns an iterator over the shapes of all external parameters in the module
         and its submodules as tuples (name, shape)
 
         Yields:
-            Iterator[Tuple[str, Tuple[int, ...]]]: An iterator over the shapes of all
+            Dict[str, Tuple[int, ...]]: An iterator over the shapes of all
             external parameters in the module and its submodules
             as tuples (name, shape)
         """
-        for name, external_param in self.named_externals():
-            yield name, external_param.shape
+        return {
+            name: external_param.shape
+            for name, external_param in self.named_externals()
+        }
 
     def _groupby_module(
         self, param_dict: Dict[str, Tensor]
