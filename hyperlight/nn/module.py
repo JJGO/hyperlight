@@ -244,4 +244,5 @@ class HyperModule(nn.Module):
         Returns:
             Dict[str, Tensor]: Dictionary containing the data of the converted external parameters.
         """
-        return {name: self.convert_external(name) for name in parameter_names}
+        parameters = {name: self.convert_external(name) for name in parameter_names}
+        return {name: param for name, param in parameters.items() if param is not None}

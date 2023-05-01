@@ -130,7 +130,6 @@ class HyperNetMixin:
         """
         return {k: encode_input(x, mode=self.encoding) for k, x in inputs.items()}
 
-    @property
     def flat_input_size(self) -> int:
         """Returns the flat input size after encoding.
 
@@ -141,7 +140,6 @@ class HyperNetMixin:
         flat_input_size *= encoding_multiplier[self.encoding]
         return flat_input_size
 
-    @property
     def flat_output_size(self) -> int:
         """Returns the flat output size.
 
@@ -151,8 +149,7 @@ class HyperNetMixin:
         flat_output_size = sum(int(math.prod(v)) for v in self.output_shapes.values())
         return flat_output_size
 
-    @cached_property
-    def _output_offsets(self) -> Dict[str, Tuple[int, int]]:
+    def output_offsets(self) -> Dict[str, Tuple[int, int]]:
         """Returns the output offsets.
 
         Returns:
@@ -162,7 +159,7 @@ class HyperNetMixin:
         offset = 0
         offsets = {}
         for name, shape in self.output_shapes.items():
-            size = int(np.prod(shape))
+            size = int(math.prod(shape))
             offsets[name] = (offset, size)
             offset += size
         return offsets
@@ -255,15 +252,24 @@ class HyperNet(nn.Module, HyperNetMixin):
         fc_kws: Optional[Dict[str, Any]] = None,
     ):
         super().__init__()
+
+        if not isinstance(input_shapes, dict):
+            input_shapes = dict(input_shapes)
+        if not isinstance(output_shapes, dict):
+            output_shapes = dict(output_shapes)
+
         self.input_shapes = input_shapes
         self.output_shapes = output_shapes
         self.hidden_sizes = hidden_sizes
         self.encoding = encoding
 
+        # Cache this property to avoid recomputation
+        self._output_offsets = self.output_offsets()
+
         self.backbone = FullyConnectedNet(
-            input_size=self.flat_input_size,
+            input_size=self.flat_input_size(),
             hidden_sizes=self.hidden_sizes,
-            output_size=self.flat_output_size,
+            output_size=self.flat_output_size(),
             **(fc_kws or {}),
         )
 

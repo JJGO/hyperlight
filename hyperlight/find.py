@@ -46,11 +46,11 @@ def find_modules_of_type(
     """
     _ensure_module(model)
     module_types = _ensure_module_types(module_types)
-    return [
-        (name, module)
+    return {
+        name: module
         for name, module in model.named_modules()
         if isinstance(module, module_types)
-    ]
+    }
 
 
 def find_modules_from_patterns(
