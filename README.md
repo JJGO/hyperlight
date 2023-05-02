@@ -1,3 +1,12 @@
+# HyperLight
+
+> Hypernetworks in Pytorch made easy
+[![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=flat&amp;logo=PyTorch&amp;logoColor=white)](https://pytorch.org)
+[![Supported Python Versions](https://img.shields.io/pypi/pyversions/hyperlight)](https://pypi.org/project/hyperlight/) 
+[![PyPI version](https://badge.fury.io/py/hyperlight.svg)](https://badge.fury.io/py/hyperlight)
+[![Downloads](https://pepy.tech/badge/hyperlight)](https://pepy.tech/project/hyperlight)
+[![license](https://img.shields.io/github/license/JJGO/hyperlight.svg)](https://github.com/JJGO/hyperlight/blob/main/LICENSE)
+
 ## TL;DR
 
 HyperLight is a Pytorch library designed to make implementing hypernetwork models easy and painless.
@@ -8,7 +17,6 @@ What sets HyperLight apart from other hypernetwork implementations:
 - **Work with pretrained models** – Use pretrained weights as part of the hypernetwork initialization.
 - **Seamless Composability** – It's hypernets all the way down! Hypernetize hypernet models without issue.
 - **_Pytorch-nic_ API design** – Parameters are treated as an attribute of the layer, preventing the need for rewriting PyTorch modules.
-
 <!-- - **Easy weight reuse** – Once a model has its weights set, it can be used many times. -->
 
 [1] [Non-Proportional Parametrizations for Stable Hypernetwork Learning](https://arxiv.org/abs/2304.07645)
