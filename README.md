@@ -8,7 +8,6 @@ _Hypernetworks in Pytorch made easy_
 [![Downloads](https://pepy.tech/badge/hyperlight)](https://pepy.tech/project/hyperlight)
 [![license](https://img.shields.io/github/license/JJGO/hyperlight.svg)](https://github.com/JJGO/hyperlight/blob/main/LICENSE)
 
-<img src="https://raw.githubusercontent.com/JJGO/hyperlight/assets/hyperlight-diagram.png" alt="Image" style="max-width: 100px;">
 
 ## TL;DR
 
@@ -21,6 +20,8 @@ What sets HyperLight apart from other hypernetwork implementations:
 - **Seamless Composability** – It's hypernets all the way down! Hypernetize hypernet models without issue.
 - **_Pytorch-nic_ API design** – Parameters are treated as an attribute of the layer, preventing the need for rewriting PyTorch modules.
 <!-- - **Easy weight reuse** – Once a model has its weights set, it can be used many times. -->
+<br>
+<img src="https://raw.githubusercontent.com/JJGO/hyperlight/assets/hyperlight-diagram.png" alt="Image" style="max-width: 100px;">
 
 [1] [Non-Proportional Parametrizations for Stable Hypernetwork Learning](https://arxiv.org/abs/2304.07645)
 
