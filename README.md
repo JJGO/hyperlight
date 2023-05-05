@@ -8,6 +8,8 @@ _Hypernetworks in Pytorch made easy_
 [![Downloads](https://pepy.tech/badge/hyperlight)](https://pepy.tech/project/hyperlight)
 [![license](https://img.shields.io/github/license/JJGO/hyperlight.svg)](https://github.com/JJGO/hyperlight/blob/main/LICENSE)
 
+<img src="https://raw.githubusercontent.com/JJGO/hyperlight/assets/hyperlight-diagram.png" alt="Image" style="max-width: 100px;">
+
 ## TL;DR
 
 HyperLight is a Pytorch library designed to make implementing hypernetwork models easy and painless.
