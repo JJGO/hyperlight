@@ -52,6 +52,9 @@ class FullyConnectedNet(nn.Sequential):
         Creates a fully connected neural network with specified input size, hidden sizes,
         output size, dropout probability and activation function.
 
+        The default choice of 'fan out' init is done on purpose as hypernetworks tend to
+        substantially increase the number of neurons, specially in the last layer
+
         Args:
             input_size (int): Dimension of input
             hidden_sizes (List[int]): List of hidden layer dimensions
@@ -250,6 +253,7 @@ class HyperNet(nn.Module, HyperNetMixin):
         encoding: InputMode = "cos|sin",
         init_independent_weights: bool = True,
         fc_kws: Optional[Dict[str, Any]] = None,
+        output_split_init: bool = True,
     ):
         super().__init__()
 
@@ -275,6 +279,34 @@ class HyperNet(nn.Module, HyperNetMixin):
 
         if init_independent_weights:
             self.init_independent_weights()
+
+        if output_split_init:
+            self._init_output_split()
+
+    def _init_output_split(self):
+        """
+        Helper function that initializes the MLP last fully connected layer
+        as N independent layers. This is important because the fan_out scheme
+        will substantially change depending on the number of predicted neurons
+
+        Moreover, if the layer is predicting a bias, we initialize it to zero
+        """
+
+        output_weight = self.backbone.output.weight
+        nonlinearity = self.backbone.nonlinearity
+        init_distribution = self.backbone.init_distribution
+
+        for name in self.output_shapes:
+            offset, length = self._output_offsets[name]
+            tensor = output_weight[offset:offset+length,:]
+            if name.endswith('.bias'):
+                # Bias should initialize to zero
+                initialize_weight(tensor, 'zeros')
+            elif name.endswith('.weight'):
+                initialize_weight(tensor, init_distribution, nonlinearity=nonlinearity)
+            else:
+                initialize_weight(tensor, init_distribution, nonlinearity=nonlinearity)
+
 
     @classmethod
     def from_existing(cls, weights: Dict[str, Tensor], **kwargs) -> "HyperNet":
