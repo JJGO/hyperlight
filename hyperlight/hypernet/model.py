@@ -244,7 +244,18 @@ class HyperNetMixin:
         return outputs
 
 
-class HyperNet(nn.Module, HyperNetMixin):
+class HyperNet(nn.Module):
+    """A hypernetwork that generates weights for a target network. Shape is Dict[str, Tuple[int, ...]]
+
+    Args:
+        input_shapes (Dict[str, Shape]): The shapes of the inputs that the hypernetwork takes
+        output_shapes (Dict[str, Shape]): The shapes of the primary network weights being predicted,
+        hidden_sizes (List[int]): The sizes of the hidden layers of the hypernetwork.
+        encoding (InputMode, optional): The input encoding mode. Defaults to "cos|sin".
+        init_independent_weights (bool, optional): Whether to init weights independently. Defaults to True.
+        output_split_init (bool, optional): Whether to initialize the output split. Defaults to True.
+        fc_kws (Dict[str, Any], optional): Keyword arguments for the fully connected layers. Defaults to None.
+    """
     def __init__(
         self,
         input_shapes: Dict[str, Shape],
@@ -252,8 +263,8 @@ class HyperNet(nn.Module, HyperNetMixin):
         hidden_sizes: List[int],
         encoding: InputMode = "cos|sin",
         init_independent_weights: bool = True,
-        fc_kws: Optional[Dict[str, Any]] = None,
         output_split_init: bool = True,
+        fc_kws: Optional[Dict[str, Any]] = None,
     ):
         super().__init__()
 
