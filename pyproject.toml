@@ -6,7 +6,7 @@ build-backend = "poetry.core.masonry.api"
 name = "hyperlight"
 homepage = "https://github.com/JJGO/hyperlight"
 documentation = "https://github.com/JJGO/hyperlight"
-version = "0.0.3"
+version = "0.0.4"
 description = "Hyperlight is a Pytorch hypernetwork framework with a streamlined API"
 authors = ["Jose Javier Gonzalez Ortiz <josejg@mit.edu>"]
 license = "Apache-2.0"
@@ -39,7 +39,7 @@ pre-commit = "^2.17.0"
 profile = "black"
 
 [tool.bumpver]
-current_version = "0.0.3"
+current_version = "0.0.4"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message  = "Bump version {old_version} -> {new_version}"
 commit          = true
