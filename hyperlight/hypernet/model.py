@@ -244,7 +244,7 @@ class HyperNetMixin:
         return outputs
 
 
-class HyperNet(nn.Module):
+class HyperNet(nn.Module, HyperNetMixin):
     """A hypernetwork that generates weights for a target network. Shape is Dict[str, Tuple[int, ...]]
 
     Args:
