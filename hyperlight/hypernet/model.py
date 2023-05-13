@@ -7,8 +7,7 @@ import torch
 from torch import Tensor, nn
 
 from .encoding import InputMode, encode_input, encoding_multiplier
-from .initialization import (initialize_bias, initialize_layer,
-                             initialize_weight)
+from .initialization import initialize_bias, initialize_layer, initialize_weight
 
 Shape = Tuple[int, ...]
 
@@ -256,6 +255,7 @@ class HyperNet(nn.Module, HyperNetMixin):
         output_split_init (bool, optional): Whether to initialize the output split. Defaults to True.
         fc_kws (Dict[str, Any], optional): Keyword arguments for the fully connected layers. Defaults to None.
     """
+
     def __init__(
         self,
         input_shapes: Dict[str, Shape],
@@ -309,15 +309,8 @@ class HyperNet(nn.Module, HyperNetMixin):
 
         for name in self.output_shapes:
             offset, length = self._output_offsets[name]
-            tensor = output_weight[offset:offset+length,:]
-            if name.endswith('.bias'):
-                # Bias should initialize to zero
-                initialize_weight(tensor, 'zeros')
-            elif name.endswith('.weight'):
-                initialize_weight(tensor, init_distribution, nonlinearity=nonlinearity)
-            else:
-                initialize_weight(tensor, init_distribution, nonlinearity=nonlinearity)
-
+            tensor = output_weight[offset : offset + length, :]
+            initialize_weight(tensor, init_distribution, nonlinearity=nonlinearity)
 
     @classmethod
     def from_existing(cls, weights: Dict[str, Tensor], **kwargs) -> "HyperNet":
