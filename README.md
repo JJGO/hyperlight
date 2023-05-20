@@ -56,109 +56,134 @@ export PYTHONPATH="$PYTHONPATH:/path/to/hyperlight)"
 
 ## Getting Started
 
-The main advantage of HyperLight is that it allows to easily reuse existing networks without having to redo the model code.
+The main advantage of HyperLight is that it allows to easily **reuse existing networks** without having to redo the model code.
 
-For example, here's a Bayesian Neural Hypernetwork for the resnet18 architecture:
+For example, here's a Bayesian Neural Hypernetwork for a simple convnet architecture. We start bt declaring the main architecture without having to worry about hypernetworks
+
 
 ```python
-from torchvision.models import resnet18
+from torch import nn, Tensor
+import torch.nn.functional as F
+
+class ConvNet(nn.Module):
+
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Conv2d(1, 16, 5, 1)
+        self.conv2 = nn.Conv2d(16, 32, 3, 1)
+        self.conv3 = nn.Conv2d(32, 64, 3, 1)
+        self.conv4 = nn.Conv2d(64, 64, 3, 1)
+        self.fc = nn.Linear(64, 10)
+
+    def forward(self, x):
+        x = F.leaky_relu(self.conv1(x))
+        x = F.leaky_relu(self.conv2(x))
+        x = F.max_pool2d(x, 2, 2)
+        x = F.leaky_relu(self.conv3(x))
+        x = F.max_pool2d(x, 2, 2)
+        x = F.leaky_relu(self.conv4(x))
+        x = F.adaptive_avg_pool2d(x, (1, 1))
+        x = x.reshape(-1, self.fc.in_features)
+        x = self.fc(x)
+        return x
+```
+
+Now, we use **HyperLight** to hypernetize the convolutional layers. Hypernetizing a module involes 3 steps:
+
+1. Instantiating a regular version of the `nn.Module`
+2. Using `hl.hypernetize` to swap `nn.Parameter` with `hl.ExternalParameter` objects
+3. Creating a `hl.HyperNet` network to predict the weights of the primary network.
+
+
+```python
 import hyperlight as hl
 
-# First, instantiate the main network and
-# hyperparametrize all convolutional weights
-mainnet = resnet18()
-modules = hl.find_modules_of_type(mainnet, [nn.Conv2d])
+# 1. First, instantiate the main network and 
+mainnet = ConvNet()
 
-# Replace nn.Parameter objects with ExternalParameters
-mainnet = hl.hypernetize(mainnet, modules=modules)
+# 2. hypernetize: Replace nn.Parameter objects with ExternalParameters
+module_to_hypernetize = [
+    mainnet.conv1,
+    mainnet.conv2,
+    mainnet.conv3,
+    mainnet.conv4
+]
+mainnet = hl.hypernetize(mainnet, modules=module_to_hypernetize)
 
+# 3. Create a hypernet to preduct the weights
 # Get the spec of the weights we need to predict
 parameter_shapes = mainnet.external_shapes()
 
 # We can predict these shapes any way we want,
 # but hyperlight provides hypernetwork models
 hyperparam_shape = {'h': (10,)} # 10-dim input
-hypernet = hl.Hypernet(
+hypernet = hl.HyperNet(
     input_shapes=hyperparam_shape,
     output_shapes=parameter_shapes,
     hidden_sizes=[16,64,128],
 )
+```
+
+We are now ready to use our model, let's define some simple inputs and make a prediction
+
+
+```python
+h = torch.zeros((10,))
+x = torch.zeros((1,1,28,28))
 
 # Now, instead of model(input) we first predict the main network weights
-parameters = hl.hypernet(h=hyperpameter_input)
+parameters = hypernet(h=h)
 
 # and then use the main network
 with mainnet.using_externals(parameters):
-    # Within this context manager, the weights are accessible
-    prediction = mainnet(input)
+    # Within this with block, the weights are accessible
+    prediction = mainnet(x)
 
-    # After this point, weights are removed
+# After this point, weights are removed, and it will trigger an error
+# >>> prediction = mainnet(x)
+# AttributeError: Uninitialized External Parameter, please set the value first
+
 ```
 
-We can also wrap this into `nn.Module` to pair-up the hypernet with the main network and have a nicer API:
+We can also wrap this into nn.Module to pair-up the hypernet with the main network and have a more selfcontained API
+
 
 ```python
+class HyperConvNet(nn.Module):
 
-class HyperResNet18(nn.Module):
-
-    def __init__(self,
-        hypernet_layers: List[]
-        ):
+    def __init__(self):
         super().__init__()
-        mainnet = resnet18()
+        mainnet = ConvNet()
+        # HyperLight provides convenience funtions to select relevant modules
         modules = hl.find_modules_of_type(mainnet, [nn.Conv2d])
         self.mainnet = hl.hypernetize(mainnet, modules=modules)
-
-        self.hypernet = hl.Hypernet(
+        self.hypernet = hl.HyperNet(
             input_shapes={'h': (10,)},
             output_shapes=parameter_shapes,
-            layer_sizes=[16,64,128],
+            hidden_sizes=[16,64,128],
         )
 
-    def forward(self, input, hyper_input):
+    def forward(self, main_input, hyper_input):
         parameters = self.hypernet(h=hyper_input)
 
         with self.mainnet.using_externals(parameters):
-            prediction = self.mainnet(input)
+            prediction = self.mainnet(main_input)
 
         return input
+    
+model = HyperConvNet()
+model(x, h).shape
 ```
 
+---
+---
 
-With HyperLight, we can reuse the pretrained weights by setting them as independent weights:
+ 
 
-
-```python
-
-class HyperResNet18(nn.Module):
-
-    def __init__(self,
-        hypernet_layers: List[]
-        ):
-        super().__init__()
-        # Load pretrained weights
-        mainnet = resnet18(pretrained=True)
-        modules = hl.find_modules_of_type(mainnet, [nn.Conv2d])
-        self.mainnet, weights = hl.hypernetize(mainnet, modules=modules, return_values=True)
-
-        # Construct from existing
-        self.hypernet = hl.Hypernet.from_existing(
-            weights, # weights encode shape and initialization
-            input_shapes={'h': (10,)},
-            output_shapes=parameter_shapes,
-            layer_sizes=[16,64,128],
-        )
-
-    def forward(self, input, hyper_input):
-        parameters = self.hypernet(h=hyper_input)
-
-        with self.mainnet.using_externals(parameters):
-            prediction = self.mainnet(input)
-
-        return input
-```
 
 ## Tutorial
+
+
 
 ### Concepts
 
@@ -170,10 +195,13 @@ and `ExternalParameters` to be predicted by an external hypernetwork.
 externalized parameter. Parameter data can be set and reset with the hypernetwork predictions.
 - `HyperNetwork` – `nn.Module` that predicts a main network parameters for a given input.
 
+
+
 ### Defining a `HyperModule` with `ExternalParameter`s
 
 Here is an example of how we define a hypernetized Linear layer. We need to make sure to
 define the `ExternalParameter` properties with their correct shapes.
+
 
 ```python
 import torch.nn.functional as F
@@ -205,71 +233,111 @@ Once defined, we can make use of this module as follows:
 
 
 ```python
->>> layer = HyperLinear(in_features=8, out_features=16)
->>> layer.external_shapes()
-{'weight': (16, 8), 'bias': (16,)}
->>> x = torch.zeros(1, 8)
+layer = HyperLinear(in_features=8, out_features=16)
+print(layer.external_shapes())
+# >>> {'weight': (16, 8), 'bias': (16,)}
+x = torch.zeros(1, 8)
 
-# We need to set the weights before using the layer
->>> layer(x)
-[...]
-AttributeError: Uninitialized External Parameter, please set the value first
+# We need to set the weights before using the layer otherwise we will get an error
 
 # Initialize the external weights
->>> layer.set_externals(weight=torch.rand(size=(16,8)), bias=torch.zeros((16,)))
->>> layer(x).shape
-torch.Size([1, 16])
+layer.set_externals(weight=torch.rand(size=(16,8)), bias=torch.zeros((16,)))
+print(layer(x).shape)
+# >>> torch.Size([1, 16])
 
 # Once we are done, we reset the external parameter values
->>> layer.reset_externals()
+layer.reset_externals()
 ```
 
 Alternatively, we can use the `using_externals` contextmanager that will set and reset
 the parameters accordingly:
 
+
 ```python
-params(weight=torch.rand(size=(16,8)), bias=torch.zeros((16,)))
+params = {
+    'weight': torch.rand(size=(16,8)),
+    'bias': torch.zeros((16,))
+}
+
 with layer.using_externals(params):
     y = layer(x)
 ```
 
+### Static HyperModules
+
+HyperLight provides implementations of most parametric layers such as `hl.HyperLinear` or `hl.HyperConv2d`. We can use this to directly define our primary architecture. Let's revise our earlier example with `ConvNet`
+
+
+```python
+from torch import nn, Tensor
+import torch.nn.functional as F
+
+# We change nn.Module -> hl.HyperModule
+class PrimaryConvNet(hl.HyperModule):
+
+    def __init__(self):
+        super().__init__()
+        # we hypernetize the first two conv layers
+        self.conv1 = hl.HyperConv2d(1, 16, 5, 1)
+        self.conv2 = hl.HyperConv2d(16, 32, 3, 1)
+        self.conv3 = nn.Conv2d(32, 64, 3, 1)
+        self.conv4 = nn.Conv2d(64, 64, 3, 1)
+        # we do not hypernetize the last layer
+        self.fc = nn.Linear(64, 10)
+
+    def forward(self, x):
+        x = F.leaky_relu(self.conv1(x))
+        x = F.leaky_relu(self.conv2(x))
+        x = F.max_pool2d(x, 2, 2)
+        x = F.leaky_relu(self.conv3(x))
+        x = F.max_pool2d(x, 2, 2)
+        x = F.leaky_relu(self.conv4(x))
+        x = F.adaptive_avg_pool2d(x, (1, 1))
+        x = x.reshape(-1, self.fc.in_features)
+        x = self.fc(x)
+        return x
+```
+
+
+```python
+primary = PrimaryConvNet()
+print(primary.external_shapes())
+# >>> {'conv1.bias': (16,),
+#  'conv1.weight': (16, 1, 5, 5),
+#  'conv2.bias': (32,),
+#  'conv2.weight': (32, 16, 3, 3)}
+```
+
 ### Dynamically hypernetizing modules
 
-HyperLight supports **dynamic** HyperModule creation using the `hypernetize` helper.
+More practically, HyperLight supports **dynamic** HyperModule creation using the `hypernetize` helper.
 We need to specify which parameters we want to remove from the module and convert to
 `ExternalParameter` objects:
 
-```python
->>> from torch import nn
->>> import hyperlight as hl
 
->>> layer = nn.Linear(in_features=8, out_features=16)
->>> layer = hl.hypernetize(layer, parameters=[layer.weight, layer.bias])
->>> layer
-HypernetizedLinear()
->>> layer.external_shapes()
-{'weight': (16, 8), 'bias': (16,)}
+```python
+layer = nn.Linear(in_features=8, out_features=16)
+layer = hl.hypernetize(layer, parameters=[layer.weight, layer.bias])
+print(layer)
+# HypernetizedLinear()
+print(layer.external_shapes())
+# {'weight': (16, 8), 'bias': (16,)}
 ```
 
 `hypernetize` is recursive, and supports entire modules being specified:
 
 
 ```python
->>> model = nn.Sequential(OrderedDict({
-    'conv': nn.Conv2d(3,128,3),
-    'norm': nn.BatchNorm2d(128),
-    'relu': nn.ReLU(),
-    'pool': nn.AdaptiveAvgPool2d((1,1)),
-    'out': nn.Linear(128, 10)
-}))
-
->>> model = hl.hypernetize(model, modules=[model.conv, model.out])
->>>  model.external_shapes()
-{'conv.weight': (128, 3, 3, 3),
- 'conv.bias': (128,),
- 'out.weight': (10, 128),
- 'out.bias': (10,)}
+model = ConvNet()
+# This is equivalent to our earlier static definition
+model = hl.hypernetize(model, modules=[model.conv1, model.conv2])
+print(model.external_shapes())
+# {'conv1.bias': (16),
+#  'conv1.weight': (16, 1, 5, 5),
+#  'conv2.bias': (32),
+#  'conv2.weight': (32, 16, 3, 3)}
 ```
+
 
 ### Finding modules and parameters
 
@@ -282,33 +350,35 @@ specific patterns using globs, e.g. `*.conv`; or regexes, e.g. `layer[1-3].*conv
 - `find_parameters_from_patterns(model, globs=None, regex=None)` – Find parameters
 that match specific patterns.
 
-Some examples on a ResNet18 architecture:
 
 ```python
->>> from torchvision.models import resnet18
->>> import hyperlight as hl
->>> model = resnet18()
+model = ConvNet()
 
 # Find all convolutions
->>> hl.find_modules_of_type(model, [nn.Conv2d])
-{'conv1': Conv2d(3, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False),
- 'layer1.0.conv1': Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False),
- 'layer1.0.conv2': Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False),
- ...
+hl.find_modules_of_type(model, [nn.Conv2d])
+# {'conv1': Conv2d(1, 16, kernel_size=(5, 5), stride=(1, 1)),
+#  'conv2': Conv2d(16, 32, kernel_size=(3, 3), stride=(1, 1)),
+#  'conv3': Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1)),
+#  'conv4': Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1))}
+```
 
-# Find the first convolution of each ResNet block
->>> hl.find_modules_from_patterns(model, regex=['^layer\d.0.conv1'])
-{'layer1.0.conv1': Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False),
- 'layer2.0.conv1': Conv2d(64, 128, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False),
- 'layer3.0.conv1': Conv2d(128, 256, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False),
- 'layer4.0.conv1': Conv2d(256, 512, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)}
 
-# Get only the convolutional weights of the first block (no biases)
->>> hl.find_parameters_from_patterns(model, globs=['layer1*conv*.weight']).keys()
-dict_keys(['layer1.0.conv2.weight', 'layer1.0.conv1.weight', 'layer1.1.conv1.weight', 'layer1.1.conv2.weight'])
+```python
+hl.find_modules_from_patterns(model, regex=['conv[1-3]'])
+# {'conv3': Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1)),
+#  'conv1': Conv2d(1, 16, kernel_size=(5, 5), stride=(1, 1)),
+#  'conv2': Conv2d(16, 32, kernel_size=(3, 3), stride=(1, 1))}
+```
+
+
+```python
+hl.find_parameters_from_patterns(model, globs=['conv*.weight']).keys()
+# dict_keys(['conv3.weight', 'conv2.weight', 'conv1.weight', 'conv4.weight'])
 ```
 
 ### Other methods
+
+
 
 HyperLight goes beyond hypernetworks and helps implement other Deep Learning techniques related to hypernetworks.
 
@@ -316,68 +386,81 @@ As an example, the following code implements [FiLM](https://arxiv.org/pdf/1709.0
 our entire forward pass to keep track of the $\gamma$ and $\beta$ coefficients, we can have HyperLight handle that for us:
 
 
+
 ```python
-
-import hyperlight as hl
-
+# FiLM module
 class FiLM(hl.HyperModule):
-
-    def __init__(self,
-        n_features: int
+    def __init__(
+        self, n_features: int, dims: int = 2,
     ):
         super().__init__()
         self.n_features = n_features
-        self.gamma = hl.ExternalParameter((n_features,))
-        self.beta = hl.ExternalParameter((n_features,))
+        self.dims = dims
+        extra_dims = [1 for _ in range(dims)]
+        self.gamma = hl.ExternalParameter((n_features, *extra_dims))
+        self.beta = hl.ExternalParameter((n_features, *extra_dims))
 
     def forward(self, x):
         return self.gamma * x + self.beta
+    
+# Primary Network
+class FiLM_ConvNet(hl.HyperModule):
 
-
-class CNNwithFiLM(hl.HyperModule):
     def __init__(self):
         super().__init__()
-        self.layers = nn.Sequential([
-            nn.Conv2d(3,64,kernel_size=3,padding=1),
-            FiLM(64),
-            nn.LeakyReLU(),
-            nn.BatchNorm2d(64)
-            nn.Conv2d(64,128,kernel_size=3,padding=1),
-            FiLM(128),
-            nn.LeakyReLU(),
-            nn.BatchNorm2d(128)
-            nn.Conv2d(128,256,kernel_size=3,padding=1),
-            FiLM(256),
-            nn.LeakyReLU(),
-            nn.BatchNorm2d(256)
-            nn.AdaptiveAvgPool2d((1,1)),
-        ])
+        self.conv1 = nn.Conv2d(1, 16, 5, 1)
+        self.film1 = FiLM(16)
+        self.conv2 = nn.Conv2d(16, 32, 3, 1)
+        self.film2 = FiLM(32)
+        self.conv3 = nn.Conv2d(32, 64, 3, 1)
+        self.film3 = FiLM(64)
+        self.conv4 = nn.Conv2d(64, 64, 3, 1)
+        self.film4 = FiLM(64)
+        self.fc = nn.Linear(64, 10)
 
-def FiLM_Model(nn.Module):
+    def forward(self, x):
+        x = F.leaky_relu(self.conv1(x))
+        x = self.film1(x)
+        x = F.leaky_relu(self.conv2(x))
+        x = self.film2(x)
+        x = F.max_pool2d(x, 2, 2)
+        x = F.leaky_relu(self.conv3(x))
+        x = self.film3(x)
+        x = F.max_pool2d(x, 2, 2)
+        x = F.leaky_relu(self.conv4(x))
+        x = self.film4(x)
+        x = F.adaptive_avg_pool2d(x, (1, 1))
+        x = x.reshape(-1, self.fc.in_features)
+        x = self.fc(x)
+        return x
+```
+
+
+```python
+# Wrapper
+class FiLM_Model(nn.Module):
+    
     def __init__(self, embedding_size):
-        self.main = CNNwithFiLM()
-        self.aux = hl.Hypernet(
+        super().__init__()
+        self.main = FiLM_ConvNet()
+        self.cond = hl.HyperNet(
             input_shapes={'film_input': (embedding_size,)},
             output_shapes=self.main.external_shapes(),
             hidden_sizes=[],
         )
 
-    def forward(self, input, conditioning):
-        params = self.aux(film_input=conditioning)
+    def forward(self, x, conditioning):
+        params = self.cond(film_input=conditioning)
         with self.main.using_externals(params):
-            return self.main(input)
+            return self.main(x)
+        
+model = FiLM_Model(7)
+x = torch.randn((1,1,28,28))
+cond = torch.rand(1,7)
+print(model(x, cond).shape)
 ```
 
 
-## Citation
+```python
 
-If you find our work or any of our materials useful, please cite our paper:
-
-```
-@article{ortiz2023nonproportional,
-  title={Non-Proportional Parametrizations for Stable Hypernetwork Learning},
-  author={Jose Javier Gonzalez Ortiz and John Guttag and Adrian Dalca},
-  year={2023},
-  journal={arXiv:2304.07645},
-}
 ```
