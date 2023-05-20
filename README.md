@@ -2,6 +2,7 @@
 
 _Hypernetworks in Pytorch made easy_
 
+[![Explore HyperLight in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1Ejo4a_FDP4Gay2U93uxbKa48HyeuxrL4?usp=sharing)
 [![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=flat&amp;logo=PyTorch&amp;logoColor=white)](https://pytorch.org)
 [![Supported Python Versions](https://img.shields.io/pypi/pyversions/hyperlight)](https://pypi.org/project/hyperlight/) 
 [![PyPI version](https://badge.fury.io/py/hyperlight.svg)](https://badge.fury.io/py/hyperlight)
@@ -62,6 +63,7 @@ For example, here's a Bayesian Neural Hypernetwork for a simple convnet architec
 
 
 ```python
+import torch
 from torch import nn, Tensor
 import torch.nn.functional as F
 
@@ -169,7 +171,7 @@ class HyperConvNet(nn.Module):
         with self.mainnet.using_externals(parameters):
             prediction = self.mainnet(main_input)
 
-        return input
+        return prediction
     
 model = HyperConvNet()
 model(x, h).shape
