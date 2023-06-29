@@ -24,7 +24,7 @@ What sets HyperLight apart from other hypernetwork implementations:
 <br>
 <img src="https://raw.githubusercontent.com/JJGO/hyperlight/assets/hyperlight-diagram.png" alt="Image" style="max-width: 100px;">
 
-[1] [Non-Proportional Parametrizations for Stable Hypernetwork Learning](https://arxiv.org/abs/2304.07645)
+[1] [Magnitude Invariant Parametrizations Improve Hypernetwork Learning](https://arxiv.org/abs/2304.07645)
 
 ## Installation
 
