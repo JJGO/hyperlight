@@ -106,12 +106,12 @@ class FullyConnectedNet(nn.Sequential):
                     nonlinearity=self.nonlinearity,
                 )
 
-            initialize_layer(
-                self.output,
-                self.init_distribution,
-                init_bias=self.init_bias,
-                nonlinearity=None,
-            )
+        initialize_layer(
+            self.output,
+            self.init_distribution,
+            init_bias=self.init_bias,
+            nonlinearity=None,
+        )
 
 
 # TODO support for categoricals via 'C' shape and frozen embeddings
